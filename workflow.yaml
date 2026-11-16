@@ -1,0 +1,62 @@
+main:
+  steps:
+    # ----------------------------------------------------
+    # ① 環境変数からプロジェクトIDを取得して変数に代入
+    # ----------------------------------------------------
+    - init:
+        assign:
+          - PROJECT_ID: ${sys.get_env("PROJECT_ID")}
+          - DATASET_NAME: "marts"
+          - TABLE_NAME: "fct_imbalance_prices"
+
+    # ----------------------------------------------------
+    # ② SQL文を分割して変数に格納（400文字制限対策）
+    # ----------------------------------------------------
+    - build_query:
+        assign:
+          - sql_part1: ${ "SELECT STRING_AGG(ym, ',' ORDER BY ym) AS months FROM (SELECT DISTINCT FORMAT_DATE('%Y%m', target_date) AS ym FROM `" + PROJECT_ID + "." + DATASET_NAME + "." + TABLE_NAME + "` WHERE DATE_DIFF(DATE(updated_at_jst), target_date, MONTH) BETWEEN 0 AND 1 UNION DISTINCT " }
+          - sql_part2: ${ "SELECT FORMAT_DATE('%Y%m', tm) AS ym FROM UNNEST(GENERATE_DATE_ARRAY((SELECT COALESCE(DATE_TRUNC(MAX(target_date), MONTH), DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 2 MONTH), MONTH)) FROM `" + PROJECT_ID + "." + DATASET_NAME + "." + TABLE_NAME + "`), DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH), INTERVAL 1 MONTH)) AS tm)" }
+
+    # ----------------------------------------------------
+    # ③ BigQueryで対象月を抽出
+    # ----------------------------------------------------
+    - query_bigquery:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${PROJECT_ID}
+          body:
+            location: us-central1
+            useLegacySql: false
+            query: ${ sql_part1 + sql_part2 }
+        result: query_result
+
+    # ----------------------------------------------------
+    # ④ 結果からカンマ区切りの年月文字列を取り出す
+    # ----------------------------------------------------
+    - extract_months:
+        assign:
+          - target_months_str: ${query_result.rows[0].f[0].v}
+
+    # ----------------------------------------------------
+    # ⑤ Cloud Run Jobを起動し、環境変数に動的に渡す
+    # ----------------------------------------------------
+    - run_imbalance_fetch_job:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${ "namespaces/" + PROJECT_ID + "/jobs/imbalance-fetch-job" }
+          location: asia-northeast1
+          body:
+            overrides:
+              containerOverrides:
+                - env:
+                    - name: TARGET_MONTHS
+                      value: ${target_months_str}
+        result: job_result
+
+    # ----------------------------------------------------
+    # ⑥ 実行結果を返す
+    # ----------------------------------------------------
+    - return_result:
+        return:
+          executed_months: ${target_months_str}
+          job_status: ${job_result}

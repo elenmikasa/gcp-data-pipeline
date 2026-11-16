@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: imbalance
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: raw
+    tables:
+      - name: imbalance_prices_latest_ext
+      - name: imbalance_prices_history_ext

@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_imbalance__imbalance_prices
+    description: インバランス料金単価CSVを整形したstagingモデル。
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - target_date
+              - time_slot
+    columns:
+      - name: target_date
+        description: 対象日付。
+        data_tests:
+          - not_null
+      - name: time_slot
+        description: 30分単位の時間帯コマ番号。
+        data_tests:
+          - not_null
+      - name: time_start
+        description: 時間帯の開始時刻。
+      - name: time_end
+        description: 時間帯の終了時刻。
+      - name: hokkaido
+        description: 北海道エリアの余剰インバランス料金単価（円/kWh）。
+      - name: tohoku
+        description: 東北エリアの余剰インバランス料金単価（円/kWh）。
+      - name: tokyo
+        description: 東京エリアの余剰インバランス料金単価（円/kWh）。
+      - name: chubu
+        description: 中部エリアの余剰インバランス料金単価（円/kWh）。
+      - name: hokuriku
+        description: 北陸エリアの余剰インバランス料金単価（円/kWh）。
+      - name: kansai
+        description: 関西エリアの余剰インバランス料金単価（円/kWh）。
+      - name: chugoku
+        description: 中国エリアの余剰インバランス料金単価（円/kWh）。
+      - name: shikoku
+        description: 四国エリアの余剰インバランス料金単価（円/kWh）。
+      - name: kyushu
+        description: 九州エリアの余剰インバランス料金単価（円/kWh）。

@@ -1,0 +1,6 @@
+google-cloud-storage
+google-cloud-workflows
+python-dotenv
+requests
+httpx
+dbt-bigquery

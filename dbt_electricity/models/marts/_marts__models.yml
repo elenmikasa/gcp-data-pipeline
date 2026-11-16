@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: fct_electricity_prices
+    description: JEPXエリアプライスとインバランス料金単価を縦持ちで蓄積するファクトテーブル。
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - target_date
+              - time_slot
+              - area_code
+              - price_type
+    columns:
+      - name: target_date
+        description: 対象日。
+        data_tests:
+          - not_null
+      - name: time_slot
+        description: 30分単位の時間帯コマ番号。
+        data_tests:
+          - not_null
+      - name: area_code
+        description: エリアコード。
+        data_tests:
+          - not_null
+      - name: price_type
+        description: 価格の種類（エリアプライス、インバランス料金など）。
+        data_tests:
+          - not_null
+      - name: price_yen_per_kwh
+        description: 価格（円/kWh）。
+
+  - name: fct_imbalance_prices
+    description: インバランス料金単価を対象日・時間帯ごとに蓄積するファクトテーブル。
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - target_date
+              - time_slot
+    columns:
+      - name: target_date
+        description: 対象日。
+        data_tests:
+          - not_null
+      - name: time_slot
+        description: 30分単位の時間帯コマ番号。
+        data_tests:
+          - not_null
+      - name: time_start
+        description: 時間帯の開始時刻。
+      - name: time_end
+        description: 時間帯の終了時刻。
+      - name: hokkaido
+        description: 北海道エリアの余剰インバランス料金単価（円/kWh）。
+      - name: tohoku
+        description: 東北エリアの余剰インバランス料金単価（円/kWh）。
+      - name: tokyo
+        description: 東京エリアの余剰インバランス料金単価（円/kWh）。
+      - name: chubu
+        description: 中部エリアの余剰インバランス料金単価（円/kWh）。
+      - name: hokuriku
+        description: 北陸エリアの余剰インバランス料金単価（円/kWh）。
+      - name: kansai
+        description: 関西エリアの余剰インバランス料金単価（円/kWh）。
+      - name: chugoku
+        description: 中国エリアの余剰インバランス料金単価（円/kWh）。
+      - name: shikoku
+        description: 四国エリアの余剰インバランス料金単価（円/kWh）。
+      - name: kyushu
+        description: 九州エリアの余剰インバランス料金単価（円/kWh）。
+      - name: updated_at_jst
+        description: 更新日時（日本時間）。
+
+  - name: rpt_electricity_prices
+    description: レポート向けに電力価格ファクトへエリア名と時間ラベルを付与したビュー。
+    columns:
+      - name: target_date
+        description: 対象日。
+      - name: time_slot
+        description: 30分単位の時間帯コマ番号。
+      - name: time_label
+        description: 時間帯の表示ラベル。
+      - name: area_code
+        description: エリアコード。
+      - name: area_name
+        description: エリア名。
+      - name: price_type
+        description: 価格の種類。
+      - name: price_yen_per_kwh
+        description: 価格（円/kWh）。

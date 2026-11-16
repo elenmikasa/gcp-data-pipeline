@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_jepx__spot_summary
+    description: JEPXスポット市場サマリーの元データを整形したモデル。
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - delivery_date
+              - time_slot
+    columns:
+      - name: delivery_date
+        description: 受渡日。
+        data_tests:
+          - not_null
+      - name: time_slot
+        description: 30分単位の時間帯コマ番号。2桁の文字列。
+        data_tests:
+          - not_null
+      - name: sell_bid_volume_kwh
+        description: 売り入札量（kWh）。
+      - name: buy_bid_volume_kwh
+        description: 買い入札量（kWh）。
+      - name: contract_volume_kwh
+        description: 約定量（kWh）。
+      - name: system_price_yen_per_kwh
+        description: システムプライス（円/kWh）。
+      - name: hokkaido_price_yen_per_kwh
+        description: 北海道エリアプライス（円/kWh）。
+      - name: tohoku_price_yen_per_kwh
+        description: 東北エリアプライス（円/kWh）。
+      - name: tokyo_price_yen_per_kwh
+        description: 東京エリアプライス（円/kWh）。
+      - name: chubu_price_yen_per_kwh
+        description: 中部エリアプライス（円/kWh）。
+      - name: hokuriku_price_yen_per_kwh
+        description: 北陸エリアプライス（円/kWh）。
+      - name: kansai_price_yen_per_kwh
+        description: 関西エリアプライス（円/kWh）。
+      - name: chugoku_price_yen_per_kwh
+        description: 中国エリアプライス（円/kWh）。
+      - name: shikoku_price_yen_per_kwh
+        description: 四国エリアプライス（円/kWh）。
+      - name: kyushu_price_yen_per_kwh
+        description: 九州エリアプライス（円/kWh）。
+      - name: sell_block_bid_volume_kwh
+        description: 売りブロック入札量（kWh）。
+      - name: sell_block_contract_volume_kwh
+        description: 売りブロック約定量（kWh）。
+      - name: buy_block_bid_volume_kwh
+        description: 買いブロック入札量（kWh）。
+      - name: buy_block_contract_volume_kwh
+        description: 買いブロック約定量（kWh）。
