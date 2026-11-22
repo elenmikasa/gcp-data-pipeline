@@ -9,17 +9,17 @@ JEPX（スポット市場サマリー）およびインバランス料金の CSV
 ```mermaid
 flowchart TB
     subgraph Sources["取得元"]
-        JEPXWeb["JEPX Webサイト<br/>スポットサマリー CSV"]
-        ImbSite["インバランス料金サイト<br/>インバランス料金 CSV"]
+        JEPXWeb["JEPX Webサイト"]
+        ImbSite["インバランス料金情報公表ウェブサイト"]
     end
 
     WF["Cloud Workflows<br/>対象月抽出・並列制御"]
 
     subgraph ExtractLoad["Extract & Load（取得・GCS・BigQuery 取込）"]
         subgraph CloudRunJobs["Cloud Run Jobs"]
-            FetchSpot["スポット取得 Job<br/>fetch-spot-summary-job"]
-            FetchImb["インバランス取得 Job<br/>imbalance-fetch-job"]
-            ProcImb["インバランス加工 Job<br/>process-imbalance-prices-job"]
+            FetchSpot["スポットサマリーCSV取得 Job<br/>fetch-spot-summary-job"]
+            FetchImb["インバランス料金CSV取得 Job<br/>imbalance-fetch-job"]
+            ProcImb["インバランス料金CSV加工 Job<br/>process-imbalance-prices-job"]
         end
         GCS["Cloud Storage<br/>CSV / 加工済みデータ"]
         BQRaw[("BigQuery<br/>生データ / ステージング")]
