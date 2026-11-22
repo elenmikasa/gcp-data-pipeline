@@ -1,0 +1,7 @@
+.gitignore
+target/
+dbt_packages/
+logs/
+README.md
+build_image_dbt.py
+deploy_job_dbt.py

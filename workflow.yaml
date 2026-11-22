@@ -8,6 +8,9 @@ main:
           - PROJECT_ID: ${sys.get_env("PROJECT_ID")}
           - DATASET_NAME: "marts"
           - TABLE_NAME: "fct_imbalance_prices"
+          - fetch_job_result: null
+          - process_job_result: null
+          - spot_summary_job_result: null
 
     # ----------------------------------------------------
     # ② SQL文を分割して変数に格納（400文字制限対策）
@@ -38,25 +41,67 @@ main:
           - target_months_str: ${query_result.rows[0].f[0].v}
 
     # ----------------------------------------------------
-    # ⑤ Cloud Run Jobを起動し、環境変数に動的に渡す
+    # ⑤ インバランス処理とスポットサマリー取得を並列実行
     # ----------------------------------------------------
-    - run_imbalance_fetch_job:
-        call: googleapis.run.v1.namespaces.jobs.run
-        args:
-          name: ${ "namespaces/" + PROJECT_ID + "/jobs/imbalance-fetch-job" }
-          location: asia-northeast1
-          body:
-            overrides:
-              containerOverrides:
-                - env:
-                    - name: TARGET_MONTHS
-                      value: ${target_months_str}
-        result: job_result
+    - run_ingest_jobs_parallel:
+        parallel:
+          shared:
+            - fetch_job_result
+            - process_job_result
+            - spot_summary_job_result
+          branches:
+            - imbalance_pipeline:
+                steps:
+                  - run_imbalance_fetch_job:
+                      call: googleapis.run.v1.namespaces.jobs.run
+                      args:
+                        name: ${ "namespaces/" + PROJECT_ID + "/jobs/imbalance-fetch-job" }
+                        location: asia-northeast1
+                        body:
+                          overrides:
+                            containerOverrides:
+                              - env:
+                                  - name: TARGET_MONTHS
+                                    value: ${target_months_str}
+                      result: fetch_job_result
+                  - run_process_imbalance_job:
+                      call: googleapis.run.v1.namespaces.jobs.run
+                      args:
+                        name: ${ "namespaces/" + PROJECT_ID + "/jobs/process-imbalance-prices-job" }
+                        location: asia-northeast1
+                        body:
+                          overrides:
+                            containerOverrides:
+                              - env:
+                                  - name: TARGET_MONTHS
+                                    value: ${target_months_str}
+                      result: process_job_result
+            - spot_summary_pipeline:
+                steps:
+                  - run_fetch_spot_summary_job:
+                      call: googleapis.run.v1.namespaces.jobs.run
+                      args:
+                        name: ${ "namespaces/" + PROJECT_ID + "/jobs/fetch-spot-summary-job" }
+                        location: asia-northeast1
+                      result: spot_summary_job_result
 
     # ----------------------------------------------------
-    # ⑥ 実行結果を返す
+    # ⑥ Cloud Run Job (dbt-electricity-job) を起動
+    # ----------------------------------------------------
+    - run_dbt_electricity_job:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${ "namespaces/" + PROJECT_ID + "/jobs/dbt-electricity-job" }
+          location: asia-northeast1
+        result: dbt_job_result
+
+    # ----------------------------------------------------
+    # ⑦ 実行結果を返す
     # ----------------------------------------------------
     - return_result:
         return:
           executed_months: ${target_months_str}
-          job_status: ${job_result}
+          fetch_job_status: ${fetch_job_result}
+          process_job_status: ${process_job_result}
+          spot_summary_job_status: ${spot_summary_job_result}
+          dbt_job_status: ${dbt_job_result}
