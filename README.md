@@ -8,29 +8,29 @@ JEPX（スポット市場サマリー）およびインバランス料金の CSV
 
 ```mermaid
 flowchart TB
-    subgraph Sources["取得元（データソース）"]
-        JEPXWeb["JEPX Webサイト<br/>（スポットサマリー CSV）"]
-        ImbSite["インバランス料金サイト<br/>（インバランス料金 CSV）"]
+    subgraph Sources["取得元"]
+        JEPXWeb["JEPX Webサイト<br/>スポットサマリー CSV"]
+        ImbSite["インバランス料金サイト<br/>インバランス料金 CSV"]
     end
 
-    WF["Cloud Workflows<br/>（対象月抽出・並列実行制御）"]
+    WF["Cloud Workflows<br/>対象月抽出・並列制御"]
 
-    subgraph ExtractLoad["Extract & Load（取得・GCS 格納・BigQuery 取込）"]
+    subgraph ExtractLoad["Extract & Load（取得・GCS・BigQuery 取込）"]
         subgraph CloudRunJobs["Cloud Run Jobs"]
-            FetchSpot["スポットサマリー取得 Job<br/>(fetch-spot-summary-job)"]
-            FetchImb["インバランス取得 Job<br/>(imbalance-fetch-job)"]
-            ProcImb["インバランス加工 Job<br/>(process-imbalance-prices-job)"]
+            FetchSpot["スポット取得 Job<br/>fetch-spot-summary-job"]
+            FetchImb["インバランス取得 Job<br/>imbalance-fetch-job"]
+            ProcImb["インバランス加工 Job<br/>process-imbalance-prices-job"]
         end
-        GCS["Google Cloud Storage<br/>（CSV / 加工済みデータ格納）"]
-        BQRaw[("BigQuery<br/>（生データ / ステージングテーブル）")]
+        GCS["Cloud Storage<br/>CSV / 加工済みデータ"]
+        BQRaw[("BigQuery<br/>生データ / ステージング")]
     end
 
     subgraph Transform["Transform（dbt 変換・マート作成）"]
         subgraph CloudRunDbt["Cloud Run Jobs"]
-            DbtJob["dbt 実行 Job<br/>(dbt-electricity-job)"]
+            DbtJob["dbt 実行 Job<br/>dbt-electricity-job"]
         end
-        DbtModels["dbt Core<br/>(Staging / Intermediate)"]
-        BQMarts[("BigQuery データマート<br/>（分析用テーブル / rpt_electricity_prices 等）")]
+        DbtModels["dbt Core<br/>Staging / Intermediate"]
+        BQMarts[("BigQuery データマート<br/>rpt_electricity_prices 等")]
     end
 
     WF -.->|ジョブ制御・並列実行| CloudRunJobs
